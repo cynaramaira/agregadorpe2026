@@ -160,21 +160,27 @@
                     return offsets;
                 }, [lastData]);
 
+                const getX = (index) => {
+                    return instData.length > 1 
+                        ? padding + (index * (width - padding - rightMargin) / (instData.length - 1))
+                        : (width - rightMargin) / 2;
+                };
+
                 const handleInteraction = (e) => {
                     const svg = svgRef.current;
                     if (!svg || instData.length === 0) return;
 
                     const rect = svg.getBoundingClientRect();
                     const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    
+                    // Conversão precisa de pixels para unidades do viewBox
                     const xPos = ((clientX - rect.left) / rect.width) * width;
 
                     let closestIdx = 0;
                     let minDiff = Infinity;
 
                     instData.forEach((_, i) => {
-                        const x = instData.length > 1 
-                            ? padding + (i * (width - padding - rightMargin) / (instData.length - 1))
-                            : (width - rightMargin) / 2;
+                        const x = getX(i);
                         const diff = Math.abs(xPos - x);
                         if (diff < minDiff) {
                             minDiff = diff;
@@ -186,9 +192,7 @@
                 };
 
                 const activeIdx = hoverInfo ? instData.findIndex(d => d.id === hoverInfo.id) : -1;
-                const activeX = activeIdx !== -1 
-                    ? (instData.length > 1 ? padding + (activeIdx * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2)
-                    : 0;
+                const activeX = activeIdx !== -1 ? getX(activeIdx) : 0;
 
                 return (
                     <div className="relative group/chart">
@@ -200,6 +204,7 @@
                             onTouchMove={handleInteraction}
                             onMouseLeave={() => setHoverInfo(null)}
                         >
+                            {/* Grade Horizontal */}
                             {[0, 10, 20, 30, 40, 50, 60].map(v => (
                                 <g key={v}>
                                     <line x1={padding} y1={height - padding - (v * scaleFactor)} x2={width - rightMargin} y2={height - padding - (v * scaleFactor)} stroke="#f1f5f9" strokeWidth="2" />
@@ -207,16 +212,16 @@
                                 </g>
                             ))}
                             
+                            {/* Linha Vertical de Guia Sincronizada */}
                             {hoverInfo && (
-                                <line x1={activeX} y1={padding} x2={activeX} y2={height - padding} stroke={BRAND.orange} strokeWidth="1" strokeDasharray="4" />
+                                <line x1={activeX} y1={padding} x2={activeX} y2={height - padding} stroke={BRAND.orange} strokeWidth="1.5" strokeDasharray="4" />
                             )}
 
                             {Object.entries(candidates).map(([key, info]) => {
-                                const points = instData.map((d, i) => {
-                                    const x = instData.length > 1 ? padding + (i * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2;
-                                    const y = height - padding - (d.candidatos[key] * scaleFactor);
-                                    return { x, y };
-                                });
+                                const points = instData.map((d, i) => ({
+                                    x: getX(i),
+                                    y: height - padding - (d.candidatos[key] * scaleFactor)
+                                }));
                                 const lastPoint = points[points.length - 1];
                                 return (
                                     <g key={key}>
@@ -230,14 +235,10 @@
                                             <clipPath id={`clip-${instName.replace(/\s+/g, '')}-${key}`}>
                                                 <circle r="15" />
                                             </clipPath>
-                                            
-                                            {/* Círculo de fundo com a cor do candidato */}
                                             <circle r="15" fill={info.color} />
-                                            
                                             {info.photo ? (
                                                 <g>
                                                     <image href={info.photo} x="-15" y="-15" width="30" height="30" clipPath={`url(#clip-${instName.replace(/\s+/g, '')}-${key})`} preserveAspectRatio="xMidYMid slice" />
-                                                    {/* Borda fina colorida sobre a foto para identificação partidária */}
                                                     <circle r="15" fill="none" stroke={info.color} strokeWidth="3" />
                                                 </g>
                                             ) : (
@@ -249,12 +250,12 @@
                             })}
 
                             {instData.map((d, i) => {
-                                const x = instData.length > 1 ? padding + (i * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2;
+                                const x = getX(i);
                                 return <text key={i} x={x} y={height - 10} fontSize="10" textAnchor="middle" fill={activeIdx === i ? BRAND.orange : "#94a3b8"} fontWeight="900">{d.data.substring(0, 5)}</text>
                             })}
                         </svg>
 
-                        {/* Tooltip Flutuante */}
+                        {/* Tooltip com Ordenação por % */}
                         {hoverInfo && (
                             <div 
                                 className="absolute top-0 z-40 bg-white shadow-xl border-2 border-jamildo-blue rounded-xl p-3 pointer-events-none w-44"
@@ -268,7 +269,9 @@
                                     Pesquisa em {hoverInfo.data}
                                 </div>
                                 <div className="space-y-2">
-                                    {Object.entries(candidates).map(([key, info]) => (
+                                    {Object.entries(candidates)
+                                        .sort((a, b) => hoverInfo.candidatos[b[0]] - hoverInfo.candidatos[a[0]])
+                                        .map(([key, info]) => (
                                         <div key={key} className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${info.bg}`}></div>
@@ -390,7 +393,9 @@
                                                 <div className="flex-1 min-h-[300px] mb-8 flex flex-col justify-center">
                                                     {displayMode === 'evolution' ? <RenderEvolutionChart instData={instHistory} instName={inst} /> : (
                                                         <div className="space-y-6">
-                                                            {Object.entries(candidates).map(([key, info]) => (
+                                                            {Object.entries(candidates)
+                                                                .sort((a, b) => latest.candidatos[b[0]] - latest.candidatos[a[0]])
+                                                                .map(([key, info]) => (
                                                                 <div key={key} className="flex items-center gap-4 group">
                                                                     <CandidateAvatar info={info} />
                                                                     <div className="flex-1">
@@ -399,7 +404,7 @@
                                                                                 {info.name}
                                                                                 {info.note && <span className="ml-2 text-[8px] font-bold text-blue-500 italic opacity-60">*</span>}
                                                                             </span>
-                                                                            <span className="text-jamildo-blue">{latest.candidatos[key]}%</span>
+                                                                            <span className="text-jamildo-blue font-black">{latest.candidatos[key]}%</span>
                                                                         </div>
                                                                         <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                                                                             <div className={`h-full ${info.bg} transition-all duration-1000`} style={{ width: `${latest.candidatos[key]}%` }} />
