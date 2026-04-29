@@ -230,9 +230,16 @@
                                             <clipPath id={`clip-${instName.replace(/\s+/g, '')}-${key}`}>
                                                 <circle r="15" />
                                             </clipPath>
-                                            <circle r="15" fill={info.color} stroke="white" strokeWidth="2" />
+                                            
+                                            {/* Círculo de fundo com a cor do candidato */}
+                                            <circle r="15" fill={info.color} />
+                                            
                                             {info.photo ? (
-                                                <image href={info.photo} x="-15" y="-15" width="30" height="30" clipPath={`url(#clip-${instName.replace(/\s+/g, '')}-${key})`} preserveAspectRatio="xMidYMid slice" />
+                                                <g>
+                                                    <image href={info.photo} x="-15" y="-15" width="30" height="30" clipPath={`url(#clip-${instName.replace(/\s+/g, '')}-${key})`} preserveAspectRatio="xMidYMid slice" />
+                                                    {/* Borda fina colorida sobre a foto para identificação partidária */}
+                                                    <circle r="15" fill="none" stroke={info.color} strokeWidth="3" />
+                                                </g>
                                             ) : (
                                                 <text fontSize="10" textAnchor="middle" dy=".3em" fill="white" fontWeight="900">{info.initials}</text>
                                             )}
@@ -247,6 +254,7 @@
                             })}
                         </svg>
 
+                        {/* Tooltip Flutuante */}
                         {hoverInfo && (
                             <div 
                                 className="absolute top-0 z-40 bg-white shadow-xl border-2 border-jamildo-blue rounded-xl p-3 pointer-events-none w-44"
@@ -279,7 +287,10 @@
             const CandidateAvatar = ({ info, size = "small" }) => {
                 const sizeClass = size === "small" ? "w-10 h-10 text-[12px]" : "w-16 h-16 text-xl";
                 return (
-                    <div className={`${sizeClass} ${info.bg} rounded-full flex items-center justify-center text-white font-black shadow-sm shrink-0 border-2 border-white overflow-hidden`}>
+                    <div 
+                        className={`${sizeClass} ${info.bg} rounded-full flex items-center justify-center text-white font-black shadow-sm shrink-0 border-2 overflow-hidden`}
+                        style={{ borderColor: info.color }}
+                    >
                         {info.photo ? <img src={info.photo} alt={info.name} className="w-full h-full object-cover" /> : info.initials}
                     </div>
                 );
