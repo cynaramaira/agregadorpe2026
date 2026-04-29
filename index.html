@@ -79,6 +79,16 @@
                         };
 
                         const instituto = cols[1];
+                        const institutoLower = instituto.toLowerCase();
+                        
+                        // Lógica de Metodologia Atualizada
+                        let metodo = 'Presencial';
+                        if (institutoLower.includes('real time') || institutoLower.includes('simplex') || institutoLower.includes('ipespe')) {
+                            metodo = 'Telefone';
+                        } else if (institutoLower.includes('atlas')) {
+                            metodo = 'Internet';
+                        }
+
                         return {
                             id: idx,
                             data: cols[0],
@@ -93,8 +103,8 @@
                             },
                             brancos: parseNum(cols[8]),
                             indecisos: cols[9] ? parseNum(cols[9]) : 0,
-                            metodologia: instituto.toLowerCase().includes('real time') || instituto.toLowerCase().includes('simplex') ? 'Telefone' : 'Presencial',
-                            isUnified: instituto.toLowerCase().includes('real time')
+                            metodologia: metodo,
+                            isUnified: institutoLower.includes('real time')
                         };
                     }).filter(Boolean);
 
@@ -173,7 +183,6 @@
                     const rect = svg.getBoundingClientRect();
                     const clientX = e.clientX || (e.touches && e.touches[0].clientX);
                     
-                    // Conversão precisa de pixels para unidades do viewBox
                     const xPos = ((clientX - rect.left) / rect.width) * width;
 
                     let closestIdx = 0;
@@ -204,7 +213,6 @@
                             onTouchMove={handleInteraction}
                             onMouseLeave={() => setHoverInfo(null)}
                         >
-                            {/* Grade Horizontal */}
                             {[0, 10, 20, 30, 40, 50, 60].map(v => (
                                 <g key={v}>
                                     <line x1={padding} y1={height - padding - (v * scaleFactor)} x2={width - rightMargin} y2={height - padding - (v * scaleFactor)} stroke="#f1f5f9" strokeWidth="2" />
@@ -212,7 +220,6 @@
                                 </g>
                             ))}
                             
-                            {/* Linha Vertical de Guia Sincronizada */}
                             {hoverInfo && (
                                 <line x1={activeX} y1={padding} x2={activeX} y2={height - padding} stroke={BRAND.orange} strokeWidth="1.5" strokeDasharray="4" />
                             )}
@@ -255,7 +262,6 @@
                             })}
                         </svg>
 
-                        {/* Tooltip com Ordenação por % */}
                         {hoverInfo && (
                             <div 
                                 className="absolute top-0 z-40 bg-white shadow-xl border-2 border-jamildo-blue rounded-xl p-3 pointer-events-none w-44"
@@ -355,7 +361,7 @@
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-black uppercase text-jamildo-blue tracking-widest">Metodologia</label>
                                         <div className="flex gap-2 text-[11px] font-black">
-                                            {['Todos', 'Presencial', 'Telefone'].map(m => (
+                                            {['Todos', 'Presencial', 'Telefone', 'Internet'].map(m => (
                                                 <button key={m} onClick={() => setFilterMetodologia(m)} className={`flex-1 py-3 rounded-xl border-2 transition-all ${filterMetodologia === m ? 'bg-jamildo-blue border-jamildo-blue text-white' : 'bg-white border-slate-200 text-slate-500'}`}>{m}</button>
                                             ))}
                                         </div>
@@ -366,7 +372,7 @@
                                     <h2 className="font-black text-sm uppercase tracking-widest italic mb-4">Orientações de Análise</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px] opacity-95 leading-snug">
                                         <div className="space-y-4">
-                                            <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais e telefônicas apresentam variações naturais.</p>
+                                            <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais, telefônicas ou por internet apresentam variações naturais.</p>
                                             <p>Em situações de empate técnico, as imagens dos candidatos aparecem lado a lado no gráfico de linha. Esse recurso visual garante a visibilidade de todos os nomes quando os percentuais são idênticos ou muito próximos.</p>
                                         </div>
                                         <p>Mudanças no número de candidatos impactam os resultados. A decisão de Eduardo Moura em focar na disputa para deputado mudará o cenário. O usuário não deve comparar períodos com listas de concorrentes distintas. O remanejamento de votos altera as porcentagens.</p>
