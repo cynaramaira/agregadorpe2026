@@ -126,14 +126,39 @@
                 return list.sort((a, b) => latestDates[b] - latestDates[a]);
             }, [filteredData]);
 
-            const RenderEvolutionChart = ({ instData }) => {
+            const RenderEvolutionChart = ({ instData, instName }) => {
                 const [hoverInfo, setHoverInfo] = useState(null);
                 const svgRef = useRef(null);
 
-                const width = 400;
+                const width = 450; 
                 const height = 350;
                 const padding = 50;
+                const rightMargin = 80; 
                 const scaleFactor = 4.5;
+
+                const lastData = instData[instData.length - 1];
+
+                const xOffsets = useMemo(() => {
+                    if (!lastData) return {};
+                    const sortedByY = Object.keys(candidates)
+                        .map(key => ({
+                            key,
+                            y: height - padding - (lastData.candidatos[key] * scaleFactor)
+                        }))
+                        .sort((a, b) => a.y - b.y);
+
+                    const offsets = {};
+                    let currentXShift = 0;
+                    sortedByY.forEach((item, i) => {
+                        if (i > 0 && Math.abs(item.y - sortedByY[i-1].y) < 22) {
+                            currentXShift += 32; 
+                        } else {
+                            currentXShift = 0;
+                        }
+                        offsets[item.key] = currentXShift;
+                    });
+                    return offsets;
+                }, [lastData]);
 
                 const handleInteraction = (e) => {
                     const svg = svgRef.current;
@@ -148,8 +173,8 @@
 
                     instData.forEach((_, i) => {
                         const x = instData.length > 1 
-                            ? padding + (i * (width - 2 * padding) / (instData.length - 1))
-                            : width / 2;
+                            ? padding + (i * (width - padding - rightMargin) / (instData.length - 1))
+                            : (width - rightMargin) / 2;
                         const diff = Math.abs(xPos - x);
                         if (diff < minDiff) {
                             minDiff = diff;
@@ -162,7 +187,7 @@
 
                 const activeIdx = hoverInfo ? instData.findIndex(d => d.id === hoverInfo.id) : -1;
                 const activeX = activeIdx !== -1 
-                    ? (instData.length > 1 ? padding + (activeIdx * (width - 2 * padding) / (instData.length - 1)) : width / 2)
+                    ? (instData.length > 1 ? padding + (activeIdx * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2)
                     : 0;
 
                 return (
@@ -175,22 +200,20 @@
                             onTouchMove={handleInteraction}
                             onMouseLeave={() => setHoverInfo(null)}
                         >
-                            {/* Grade Horizontal com Parâmetros Numerados */}
                             {[0, 10, 20, 30, 40, 50, 60].map(v => (
                                 <g key={v}>
-                                    <line x1={padding} y1={height - padding - (v * scaleFactor)} x2={width - padding} y2={height - padding - (v * scaleFactor)} stroke="#f1f5f9" strokeWidth="2" />
+                                    <line x1={padding} y1={height - padding - (v * scaleFactor)} x2={width - rightMargin} y2={height - padding - (v * scaleFactor)} stroke="#f1f5f9" strokeWidth="2" />
                                     <text x={padding - 10} y={height - padding - (v * scaleFactor)} fontSize="10" textAnchor="end" dy="0.3em" fill="#94a3b8" fontWeight="bold">{v}%</text>
                                 </g>
                             ))}
                             
-                            {/* Linha Vertical de Guia */}
                             {hoverInfo && (
                                 <line x1={activeX} y1={padding} x2={activeX} y2={height - padding} stroke={BRAND.orange} strokeWidth="1" strokeDasharray="4" />
                             )}
 
                             {Object.entries(candidates).map(([key, info]) => {
                                 const points = instData.map((d, i) => {
-                                    const x = instData.length > 1 ? padding + (i * (width - 2 * padding) / (instData.length - 1)) : width / 2;
+                                    const x = instData.length > 1 ? padding + (i * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2;
                                     const y = height - padding - (d.candidatos[key] * scaleFactor);
                                     return { x, y };
                                 });
@@ -203,14 +226,13 @@
                                         {points.map((p, i) => (
                                             <circle key={i} cx={p.x} cy={p.y} r={activeIdx === i ? "8" : "5"} fill={info.color} stroke="white" strokeWidth="2" className="transition-all" />
                                         ))}
-                                        {/* Fotos nas extremidades */}
-                                        <g transform={`translate(${lastPoint.x + 12}, ${lastPoint.y - 15})`}>
-                                            <clipPath id={`clip-${key}`}>
+                                        <g transform={`translate(${lastPoint.x + 12 + (xOffsets[key] || 0)}, ${lastPoint.y - 15})`}>
+                                            <clipPath id={`clip-${instName.replace(/\s+/g, '')}-${key}`}>
                                                 <circle r="15" />
                                             </clipPath>
                                             <circle r="15" fill={info.color} stroke="white" strokeWidth="2" />
                                             {info.photo ? (
-                                                <image href={info.photo} x="-15" y="-15" width="30" height="30" clipPath={`url(#clip-${key})`} preserveAspectRatio="xMidYMid slice" />
+                                                <image href={info.photo} x="-15" y="-15" width="30" height="30" clipPath={`url(#clip-${instName.replace(/\s+/g, '')}-${key})`} preserveAspectRatio="xMidYMid slice" />
                                             ) : (
                                                 <text fontSize="10" textAnchor="middle" dy=".3em" fill="white" fontWeight="900">{info.initials}</text>
                                             )}
@@ -220,12 +242,11 @@
                             })}
 
                             {instData.map((d, i) => {
-                                const x = instData.length > 1 ? padding + (i * (width - 2 * padding) / (instData.length - 1)) : width / 2;
+                                const x = instData.length > 1 ? padding + (i * (width - padding - rightMargin) / (instData.length - 1)) : (width - rightMargin) / 2;
                                 return <text key={i} x={x} y={height - 10} fontSize="10" textAnchor="middle" fill={activeIdx === i ? BRAND.orange : "#94a3b8"} fontWeight="900">{d.data.substring(0, 5)}</text>
                             })}
                         </svg>
 
-                        {/* Tooltip Flutuante */}
                         {hoverInfo && (
                             <div 
                                 className="absolute top-0 z-40 bg-white shadow-xl border-2 border-jamildo-blue rounded-xl p-3 pointer-events-none w-44"
@@ -330,7 +351,10 @@
                                 <section className="bg-jamildo-orange text-white p-6 rounded-2xl shadow-lg">
                                     <h2 className="font-black text-sm uppercase tracking-widest italic mb-4">Orientações de Análise</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px] opacity-95 leading-snug">
-                                        <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais e telefônicas apresentam variações naturais.</p>
+                                        <div className="space-y-4">
+                                            <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais e telefônicas apresentam variações naturais.</p>
+                                            <p>Em situações de empate técnico, as imagens dos candidatos aparecem lado a lado no gráfico de linha. Esse recurso visual garante a visibilidade de todos os nomes quando os percentuais são idênticos ou muito próximos.</p>
+                                        </div>
                                         <p>Mudanças no número de candidatos impactam os resultados. A decisão de Eduardo Moura em focar na disputa para deputado mudará o cenário. O usuário não deve comparar períodos com listas de concorrentes distintas. O remanejamento de votos altera as porcentagens.</p>
                                     </div>
                                 </section>
@@ -353,7 +377,7 @@
                                                     </div>
                                                 </div>
                                                 <div className="flex-1 min-h-[300px] mb-8 flex flex-col justify-center">
-                                                    {displayMode === 'evolution' ? <RenderEvolutionChart instData={instHistory} /> : (
+                                                    {displayMode === 'evolution' ? <RenderEvolutionChart instData={instHistory} instName={inst} /> : (
                                                         <div className="space-y-6">
                                                             {Object.entries(candidates).map(([key, info]) => (
                                                                 <div key={key} className="flex items-center gap-4 group">
