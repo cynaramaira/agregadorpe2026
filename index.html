@@ -133,7 +133,19 @@
             }, [data, filterMetodologia]);
 
             const institutes = useMemo(() => {
-                return [...new Set(filteredData.map(d => d.instituto))].sort();
+                const list = [...new Set(filteredData.map(d => d.instituto))];
+                
+                // Mapeamos cada instituto para sua data mais recente
+                const latestDates = {};
+                list.forEach(inst => {
+                    const instData = filteredData.filter(d => d.instituto === inst);
+                    // filteredData já está em ordem crescente, então o último é o mais recente
+                    const latest = instData[instData.length - 1];
+                    latestDates[inst] = new Date(latest.data.split('.').reverse().join('-'));
+                });
+
+                // Ordenamos a lista de institutos: as datas mais recentes aparecem primeiro
+                return list.sort((a, b) => latestDates[b] - latestDates[a]);
             }, [filteredData]);
 
             const RenderEvolutionChart = ({ instData }) => {
@@ -222,7 +234,7 @@
                                 <img src={BRAND.logoDark} alt="Jamildo.com" className="h-8 md:h-10 w-auto" />
                                 <div className="flex flex-col border-l border-white/20 pl-4">
                                     <h1 className="text-white font-black text-sm md:text-lg uppercase tracking-tighter">Agregador de Pesquisas</h1>
-                                    <p className="text-white/70 text-[9px] md:text-[11px] font-bold mt-1">Pesquisas com registro do TSE publicadas no Jamildo.com</p>
+                                    <p className="text-white/70 text-[9px] md:text-[11px] font-bold mt-1">Apenas pesquisas com registro do TSE que o Jamildo.com publica</p>
                                 </div>
                             </div>
                             <nav className="flex gap-1 bg-white/10 p-1 rounded-xl">
@@ -271,19 +283,16 @@
                                 <section className="bg-jamildo-orange text-white p-6 rounded-2xl shadow-lg">
                                     <h2 className="font-black text-sm uppercase tracking-widest italic mb-4">Orientações de Análise</h2>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-[14px] opacity-95">
-                                        <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais e telefónicas apresentam variações naturais.</p>
-                                        <p>Mudanças no número de candidatos impactam os resultados. A decisão de Eduardo Moura em focar na disputa para deputado mudará o cenário. O usuário não deve comparar períodos com listas de concorrentes distintas. O remanejamento de votos altera as percentagens.</p>
+                                        <p>O eleitor deve evitar a comparação direta entre institutos diferentes. Cada empresa utiliza cálculos de amostragem específicos. A leitura correta exige a análise da evolução de um mesmo instituto ao longo do tempo. Metodologias presenciais e telefônicas apresentam variações naturais.</p>
+                                        <p>Mudanças no número de candidatos impactam os resultados. A decisão de Eduardo Moura em focar na disputa para deputado mudará o cenário. O usuário não deve comparar períodos com listas de concorrentes distintas. O remanejamento de votos altera as porcentagens.</p>
                                     </div>
                                 </section>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {institutes.map(inst => {
                                         const instHistory = filteredData.filter(d => d.instituto === inst);
-                                        const latest = [...instHistory].sort((a,b) => {
-                                            const da = a.data.split('.').reverse().join('-');
-                                            const db = b.data.split('.').reverse().join('-');
-                                            return new Date(db) - new Date(da);
-                                        })[0];
+                                        // instHistory já está ordenado por data crescente
+                                        const latest = instHistory[instHistory.length - 1];
                                         
                                         return (
                                             <div key={inst} className="bg-white p-6 rounded-2xl border-t-8 border-jamildo-blue shadow-md flex flex-col hover:shadow-xl transition-shadow">
@@ -320,7 +329,7 @@
                                                     )}
                                                 </div>
                                                 <div className="pt-6 border-t border-slate-100 space-y-6 text-center">
-                                                    <a href={latest.link} target="_blank" className="block w-full py-4 bg-jamildo-blue hover:bg-jamildo-orange text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md">Ver matéria no jamildo.com</a>
+                                                    <a href={latest.link} target="_blank" className="block w-full py-4 bg-jamildo-blue hover:bg-jamildo-orange text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md text-center">Ver matéria no jamildo.com</a>
                                                     <div className="grid grid-cols-2 gap-4 text-left">
                                                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                                             <span className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Brancos</span>
