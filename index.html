@@ -135,16 +135,13 @@
             const institutes = useMemo(() => {
                 const list = [...new Set(filteredData.map(d => d.instituto))];
                 
-                // Mapeamos cada instituto para sua data mais recente
                 const latestDates = {};
                 list.forEach(inst => {
                     const instData = filteredData.filter(d => d.instituto === inst);
-                    // filteredData já está em ordem crescente, então o último é o mais recente
                     const latest = instData[instData.length - 1];
                     latestDates[inst] = new Date(latest.data.split('.').reverse().join('-'));
                 });
 
-                // Ordenamos a lista de institutos: as datas mais recentes aparecem primeiro
                 return list.sort((a, b) => latestDates[b] - latestDates[a]);
             }, [filteredData]);
 
@@ -291,7 +288,6 @@
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {institutes.map(inst => {
                                         const instHistory = filteredData.filter(d => d.instituto === inst);
-                                        // instHistory já está ordenado por data crescente
                                         const latest = instHistory[instHistory.length - 1];
                                         
                                         return (
@@ -300,6 +296,7 @@
                                                     <div>
                                                         <h3 className="font-black text-2xl text-jamildo-blue tracking-tighter uppercase italic">{inst}</h3>
                                                         <div className="flex flex-wrap gap-2 mt-2">
+                                                            <span className="text-[10px] font-black px-2 py-1 rounded bg-blue-50 text-jamildo-blue uppercase">Divulgação: {latest.data}</span>
                                                             <span className="text-[10px] font-black px-2 py-1 rounded bg-slate-100 text-slate-600 uppercase">{latest.metodologia}</span>
                                                             <span className="text-[10px] font-black px-2 py-1 rounded bg-orange-50 text-jamildo-orange uppercase">TSE: {latest.registro}</span>
                                                         </div>
